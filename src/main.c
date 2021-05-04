@@ -65,7 +65,7 @@ static ssize_t read_u16(struct bt_conn *conn, const struct bt_gatt_attr *attr,
                             sizeof(value));
 }
 
-// Environmental Sensing Service Declaration
+// Sensing Service Declaration
 struct es_measurement {
     uint16_t  flags; /* Reserved for Future Use */
     uint8_t   sampling_func;
@@ -75,9 +75,7 @@ struct es_measurement {
     uint8_t   meas_uncertainty;
 };
 
-struct flow_sensor {
-    int16_t flow_value;
-
+struct generic_sensor {
     /* Valid Range */
     int16_t lower_limit;
     int16_t upper_limit;
@@ -90,6 +88,8 @@ struct flow_sensor {
     };
 
     struct es_measurement meas;
+
+    int16_t sensor_values[3];
 };
 
 //struct humidity_sensor {
@@ -99,8 +99,8 @@ struct flow_sensor {
 //};
 
 static bool notify_enabled;
-static struct flow_sensor sensor_1 = {
-		.flow_value = 1200,
+static struct generic_sensor sensor_1 = {
+		.sensor_values = {0, 0, 0},
 		.lower_limit = -10000,
 		.upper_limit = 10000,
 		.condition = ESS_FIXED_TIME_INTERVAL,
@@ -148,7 +148,7 @@ static ssize_t read_flow_valid_range(struct bt_conn *conn,
 				     const struct bt_gatt_attr *attr, void *buf,
 				     uint16_t len, uint16_t offset)
 {
-	const struct flow_sensor *sensor = attr->user_data;
+	const struct generic_sensor *sensor = attr->user_data;
 	uint16_t tmp[] = {sys_cpu_to_le16(sensor->lower_limit),
 			  sys_cpu_to_le16(sensor->upper_limit)};
 
@@ -171,7 +171,7 @@ static ssize_t read_temp_trigger_setting(struct bt_conn *conn,
 					 void *buf, uint16_t len,
 					 uint16_t offset)
 {
-	const struct flow_sensor *sensor = attr->user_data;
+	const struct generic_sensor *sensor = attr->user_data;
 
 	switch (sensor->condition) {
 	/* Operand N/A */
@@ -206,7 +206,7 @@ static ssize_t read_temp_trigger_setting(struct bt_conn *conn,
 	}
 }
 
-static bool check_condition(uint8_t condition, int16_t old_val, int16_t new_val,
+static bool check_condition(uint8_t condition, int16_t *old_val, int16_t *new_val,
 			    int16_t ref_val)
 {
 	switch (condition) {
@@ -218,38 +218,42 @@ static bool check_condition(uint8_t condition, int16_t old_val, int16_t new_val,
 		/* TODO: Check time requirements */
 		return false;
 	case ESS_VALUE_CHANGED:
-		return new_val != old_val;
+		return new_val[0] != old_val[0];
 	case ESS_LESS_THAN_REF_VALUE:
-		return new_val < ref_val;
+		return new_val[0] < ref_val;
 	case ESS_LESS_OR_EQUAL_TO_REF_VALUE:
-		return new_val <= ref_val;
+		return new_val[0] <= ref_val;
 	case ESS_GREATER_THAN_REF_VALUE:
-		return new_val > ref_val;
+		return new_val[0] > ref_val;
 	case ESS_GREATER_OR_EQUAL_TO_REF_VALUE:
-		return new_val >= ref_val;
+		return new_val[0] >= ref_val;
 	case ESS_EQUAL_TO_REF_VALUE:
-		return new_val == ref_val;
+		return new_val[0] == ref_val;
 	case ESS_NOT_EQUAL_TO_REF_VALUE:
-		return new_val != ref_val;
+		return new_val[0] != ref_val;
 	default:
 		return false;
 	}
 }
 
-static void update_flow(struct bt_conn *conn,
-			       const struct bt_gatt_attr *chrc, int value,
-			       struct flow_sensor *sensor)
+static void update_sensor_values(struct bt_conn *conn,
+			       const struct bt_gatt_attr *chrc, int16_t *value,
+			       struct generic_sensor *sensor)
 {
 	bool notify = check_condition(sensor->condition,
-				      sensor->flow_value, value,
+				      sensor->sensor_values, value,
 				      sensor->ref_val);
 
 	/* Update flow value */
-	sensor->flow_value = value;
+	sensor->sensor_values[0] = value[0];
+    sensor->sensor_values[1] = value[1];
+    sensor->sensor_values[2] = value[2];
 
 	/* Trigger notification if conditions are met */
 	if (notify) {
-		value = sys_cpu_to_le16(sensor->flow_value);
+		value[0] = sys_cpu_to_le16(sensor->sensor_values[0]);
+        value[1] = sys_cpu_to_le16(sensor->sensor_values[1]);
+        value[2] = sys_cpu_to_le16(sensor->sensor_values[2]);
 
 		bt_gatt_notify(conn, chrc, &value, sizeof(value));
 	}
@@ -264,7 +268,7 @@ BT_GATT_SERVICE_DEFINE(ess_svc,
 	BT_GATT_CHARACTERISTIC(BT_UUID_TEMPERATURE,
 			       BT_GATT_CHRC_READ | BT_GATT_CHRC_NOTIFY,
 			       BT_GATT_PERM_READ,
-			       read_u16, NULL, &sensor_1.flow_value),
+			       read_u16, NULL, &sensor_1.sensor_values),
 	BT_GATT_DESCRIPTOR(BT_UUID_ES_MEASUREMENT, BT_GATT_PERM_READ,
 			   read_es_measurement, NULL, &sensor_1.meas),
 	BT_GATT_CUD(SENSOR_1_NAME, BT_GATT_PERM_READ),
@@ -277,24 +281,19 @@ BT_GATT_SERVICE_DEFINE(ess_svc,
 		    BT_GATT_PERM_READ | BT_GATT_PERM_WRITE),
 );
 
-int val1 = 0;
-int val2 = 0;
-int val3 = 0;
-
 static void simulate(void)
 {
     static uint8_t i;
 
     if (!(i % SENSOR_1_UPDATE_IVAL)) {
-        static int * values;
-        values = generic_sensor_adc_sample();
-        val1 = values[0];
-        val2 = values[1];
-        val3 = values[2];
-        // printk("Value 0 : %06d\n", values[0]);
-        // printk("Value 0 : %06d\n", values[1]);
-        // printk("Value 0 : %06d\n", values[2]);
-        update_flow(NULL, &ess_svc.attrs[2], val1, &sensor_1);
+        static int16_t *values;
+        static int *received;
+        received = generic_sensor_adc_sample();
+        for (int j = 0; j < 3; j++) {
+            values[j] = (int16_t)received[j];
+        }
+
+        update_sensor_values(NULL, &ess_svc.attrs[2], values, &sensor_1);
     }
 
     if (!(i % 100U)) {

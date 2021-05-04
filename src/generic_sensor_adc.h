@@ -7,7 +7,7 @@
 #ifndef GENERIC_SENSOR_ADC__H
 #define GENERIC_SENSOR_ADC__H
 
-int * generic_sensor_adc_sample(void);
+short int *generic_sensor_adc_sample(void);
 int generic_sensor_adc_init(void);
 
 #endif

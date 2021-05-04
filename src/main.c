@@ -76,6 +76,8 @@ struct es_measurement {
 };
 
 struct generic_sensor {
+    int16_t sensor_values[3];
+    
     /* Valid Range */
     int16_t lower_limit;
     int16_t upper_limit;
@@ -88,8 +90,6 @@ struct generic_sensor {
     };
 
     struct es_measurement meas;
-
-    int16_t sensor_values[3];
 };
 
 //struct humidity_sensor {
@@ -287,24 +287,12 @@ static void simulate(void)
 
     if (!(i % SENSOR_1_UPDATE_IVAL)) {
         static int16_t *values;
-        static int *received;
-        received = generic_sensor_adc_sample();
-        for (int j = 0; j < 3; j++) {
-            values[j] = (int16_t)received[j];
-        }
-
         update_sensor_values(NULL, &ess_svc.attrs[2], values, &sensor_1);
     }
 
     if (!(i % 100U)) {
         i = 0U; // unsigned int
     }
-
-    // if (val1 >= 500) {
-        // val1 = 0;
-    // }
-
-    //printk("i: %06u\n", i);
 
     i++;
 }
@@ -324,7 +312,6 @@ static void connected(struct bt_conn *conn, uint8_t err)
 	} else {
 		printk("Connected\n");
         red_led = 1;
-
 	}
 }
 
@@ -342,33 +329,26 @@ static struct bt_conn_cb conn_callbacks = {
 static void bt_ready(void)
 {
 	int err;
-
 	printk("Bluetooth initialized\n");
-
 	err = bt_le_adv_start(BT_LE_ADV_CONN_NAME, ad, ARRAY_SIZE(ad), NULL, 0);
 	if (err) {
 		printk("Advertising failed to start (err %d)\n", err);
 		return;
 	}
-
 	printk("Advertising successfully started\n");
 }
 
 static void auth_passkey_display(struct bt_conn *conn, unsigned int passkey)
 {
 	char addr[BT_ADDR_LE_STR_LEN];
-
 	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
-
 	printk("Passkey for %s: %06u\n", addr, passkey);
 }
 
 static void auth_cancel(struct bt_conn *conn)
 {
 	char addr[BT_ADDR_LE_STR_LEN];
-
 	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
-
 	printk("Pairing cancelled: %s\n", addr);
 }
 
@@ -428,7 +408,6 @@ void main(void)
 
         /* Battery level simulation */
         bas_notify();
-
         
         if (i == 0){
             generic_led_blink(red_led, blue_led);
@@ -437,7 +416,5 @@ void main(void)
         if (i >= 400) {
             i=0;
         }
-
-        
     }
 }

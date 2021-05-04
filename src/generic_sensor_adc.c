@@ -25,6 +25,8 @@ const struct device *adc_dev;
 #define ADC_CHANNEL_3_ID 3
 #define BUFFER_SIZE 3
 
+int16_t adc_voltage[BUFFER_SIZE];
+
 static const struct adc_channel_cfg m_channel_1_cfg = {
     .gain = ADC_GAIN,
     .reference = ADC_REFERENCE,
@@ -54,11 +56,11 @@ static const struct adc_channel_cfg m_channel_3_cfg = {
     .input_negative = NRF_SAADC_INPUT_AIN5,
 };
 
-int * generic_sensor_adc_sample(void)
+short int *generic_sensor_adc_sample(void)
 {
     static int err;
     static int16_t m_sample_buffer[BUFFER_SIZE];
-    static int adc_voltage[BUFFER_SIZE];
+    
 
     if (!adc_dev) {
         printk("Missing device\n");
@@ -104,7 +106,7 @@ int generic_sensor_adc_init(void)
 {
     int err;
 
-    printk("nrf52 saadc sampling 3 channels differential AIN0~AIN1 AIN2~AIN3 AIN4~AIN5\n");
+    printk("nRF52 SAADC sampling 3 channels differential AIN0~AIN1 AIN2~AIN3 AIN4~AIN5\n");
 
     adc_dev = device_get_binding("ADC_0");
     if (!adc_dev) {
@@ -135,7 +137,8 @@ int generic_sensor_adc_init(void)
     * the first result will be incorrect.
     */
     NRF_SAADC->TASKS_CALIBRATEOFFSET = 1;
-    static int * values;
+    static short int * values;
+    printk("Calibration triggered, first value will be incorrect.\n");
     values = generic_sensor_adc_sample();
     // while (1) {
     //     static int * values;

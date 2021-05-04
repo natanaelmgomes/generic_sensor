@@ -1,0 +1,27 @@
+{
+    "configurations": [
+        {
+            "name": "Win32",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "D:\\nRF_SDK\\ncs\\zephyr/**",
+                // "D:\\nRF_SDK\\**",
+                //"d:\\gnuarmemb\\bin",
+                "d:\\gnuarmemb\\**",
+                // "D:\\nRF_SDK\\ncs\\zephyr\\include"
+                // "D:\\nRF_SDK\\ncs\\zephyr\\include\\bluetooth"
+                "D:\\nRF_SDK\\ncs\\zephyr\\lib\\libc\\minimal\\include/**"
+            ],
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE"
+            ],
+            "cStandard": "c17",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "windows-msvc-x64",
+            "configurationProvider": "ms-vscode.cmake-tools"
+        }
+    ],
+    "version": 4
+}

@@ -1,0 +1,3 @@
+"BOARD_ROOT":"D:/nRF_SDK/ncs/nrf"
+"DTS_ROOT":"D:/nRF_SDK/ncs/nrf"
+"MODULE_EXT_ROOT":"D:/nRF_SDK/ncs/nrf"

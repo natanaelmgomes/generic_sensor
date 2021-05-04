@@ -1,2 +1,0 @@
-osource "D:/nRF_SDK/ncs/nrf/boards/shields/*/Kconfig.defconfig"
-osource "D:/nRF_SDK/ncs/zephyr/boards/shields/*/Kconfig.defconfig"

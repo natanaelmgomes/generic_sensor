@@ -61,6 +61,7 @@ short int *generic_sensor_adc_sample(void)
     static int err;
     static int16_t m_sample_buffer[BUFFER_SIZE];
     
+    printk("\n\nSampling\n");
 
     if (!adc_dev) {
         printk("Missing device\n");

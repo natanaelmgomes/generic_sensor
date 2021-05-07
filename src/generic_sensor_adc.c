@@ -56,16 +56,16 @@ static const struct adc_channel_cfg m_channel_3_cfg = {
     .input_negative = NRF_SAADC_INPUT_AIN5,
 };
 
-short int *generic_sensor_adc_sample(void)
+void generic_sensor_adc_sample(int16_t adc_voltage[])
 {
     static int err;
     static int16_t m_sample_buffer[BUFFER_SIZE];
     
-    printk("\n\nSampling\n");
+    printk("\n *** Sampling *** \n");
 
     if (!adc_dev) {
         printk("Missing device\n");
-        return adc_voltage;
+        return;
     }
     
     // init the adc_voltage with zeros
@@ -100,7 +100,7 @@ short int *generic_sensor_adc_sample(void)
     }
 
     printk("\n");
-    return adc_voltage;
+    return;
 }
 
 int generic_sensor_adc_init(void)
@@ -138,9 +138,9 @@ int generic_sensor_adc_init(void)
     * the first result will be incorrect.
     */
     NRF_SAADC->TASKS_CALIBRATEOFFSET = 1;
-    static short int * values;
+    int16_t values[3];
     printk("Calibration triggered, first value will be incorrect.\n");
-    values = generic_sensor_adc_sample();
+    generic_sensor_adc_sample(values);
     // while (1) {
     //     static int * values;
     //     values = generic_sensor_adc_sample();

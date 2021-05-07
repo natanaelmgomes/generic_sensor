@@ -32,16 +32,16 @@
 #define SENSOR_1_NAME				"Sensor 1"
 
 /* Sensor Internal Update Interval [miliseconds] */
-#define SENSOR_1_UPDATE_IVAL                100
-// #define SENSOR_2_UPDATE_IVAL             100
-// #define SENSOR_3_UPDATE_IVAL             60
+#define SENSOR_1_UPDATE_IVAL            100
+// #define SENSOR_2_UPDATE_IVAL         100
+// #define SENSOR_3_UPDATE_IVAL         60
 
 /* error definitions */
 #define ERR_WRITE_REJECT                0x80
 #define ERR_COND_NOT_SUPP               0x81
 
 /* Trigger Setting conditions */
-#define TRIGGER_INACTIVE                    0x00
+#define TRIGGER_INACTIVE                0x00
 #define FIXED_TIME_INTERVAL             0x01
 #define NO_LESS_THAN_SPECIFIED_TIME     0x02
 #define VALUE_CHANGED                   0x03
@@ -56,20 +56,21 @@ int red_led = 0;
 int blue_led = 1;
 
 /* Custom Service Variables
-Randomly generated UUID: a7ea14cf-7778-43ba-ab86-1d6e136a2e9e
+Randomly generated UUID:  a7ea14cf-7778-43ba-ab86-1d6e136a2e9e
+Base UUID Generic Sensor: a7ea14cf-0000-43ba-ab86-1d6e136a2e9e
 https://www.guidgenerator.com/online-guid-generator.aspx
  */
 static struct bt_uuid_128 BT_UUID_GENERIC_SENSOR_SERVICE = BT_UUID_INIT_128(
-	0xa0, 0xea, 0x14, 0xcf, 0x77, 0x78, 0x43, 0xba,
-	0xab, 0x86, 0x1d, 0x6e, 0x13, 0x6a, 0x2e, 0x9e);
+	0x9e, 0x2e, 0x6a, 0x13, 0x6e, 0x1d, 0x86, 0xab,
+	0xba, 0x43, 0x00, 0x00, 0xcf, 0x14, 0xea, 0xa7);
 
 static struct bt_uuid_128 BT_UUID_GENERIC_SENSOR_CHARACTERISTIC = BT_UUID_INIT_128(
-	0xa1, 0xea, 0x14, 0xcf, 0x77, 0x78, 0x43, 0xba,
-	0xab, 0x86, 0x1d, 0x6e, 0x13, 0x6a, 0x2e, 0x9e);
+	0x9e, 0x2e, 0x6a, 0x13, 0x6e, 0x1d, 0x86, 0xab,
+	0xba, 0x43, 0x01, 0x00, 0xcf, 0x14, 0xea, 0xa7);
 
 static struct bt_uuid_128 BT_UUID_GS_MEASUREMENT = BT_UUID_INIT_128(
-	0xa1, 0xea, 0x14, 0xcf, 0x77, 0x78, 0x43, 0xba,
-	0xab, 0x86, 0x1d, 0x6e, 0x13, 0x6a, 0x2e, 0x9e);
+	0x9e, 0x2e, 0x6a, 0x13, 0x6e, 0x1d, 0x86, 0xab,
+	0xba, 0x43, 0x02, 0x00, 0xcf, 0x14, 0xea, 0xa7);
     
 static ssize_t read_u16(struct bt_conn *conn, const struct bt_gatt_attr *attr,
                         void *buf, uint16_t len, uint16_t offset)
@@ -78,6 +79,8 @@ static ssize_t read_u16(struct bt_conn *conn, const struct bt_gatt_attr *attr,
 
     const uint16_t *u16 = attr->user_data;
     uint16_t value = sys_cpu_to_le16(*u16);
+
+    printk("Size of data: %d\n", sizeof(value));
 
     return bt_gatt_attr_read(conn, attr, buf, len, offset, &value,
                             sizeof(value));
@@ -133,6 +136,7 @@ static void gs_ccc_cfg_changed(const struct bt_gatt_attr *attr,
 				 uint16_t value)
 {
     printk("gs_ccc_cfg_changed\n");
+    printk("Value received: %d\n", value);
 	notify_enabled = value == BT_GATT_CCC_NOTIFY;
 }
 
@@ -260,31 +264,38 @@ static bool check_condition(uint8_t condition, int16_t *old_val, int16_t *new_va
 }
 
 static void update_sensor_values(struct bt_conn *conn,
-			       const struct bt_gatt_attr *chrc, int16_t *value,
+			       const struct bt_gatt_attr *chrc,
 			       struct generic_sensor *sensor)
 {
     printk("update_sensor_values\n");
 
-    value = generic_sensor_adc_sample();
+    int16_t values[3];
+
+    // printk("Size of data: %d\n", sizeof(values));
+
+    generic_sensor_adc_sample(values);
     
 	bool notify = check_condition(sensor->condition,
-				      sensor->sensor_values, value,
+				      sensor->sensor_values, values,
 				      sensor->ref_val);
 
-    printk("%s", notify?"true\n":"false\n");
+    printk("Condition: %s", notify?"true\n":"false\n");
 
 	/* Update flow value */
-	sensor->sensor_values[0] = value[0];
-    sensor->sensor_values[1] = value[1];
-    sensor->sensor_values[2] = value[2];
+	sensor->sensor_values[0] = values[0];
+    sensor->sensor_values[1] = values[1];
+    sensor->sensor_values[2] = values[2];
 
 	/* Trigger notification if conditions are met */
 	if (notify) {
-		value[0] = sys_cpu_to_le16(sensor->sensor_values[0]);
-        value[1] = sys_cpu_to_le16(sensor->sensor_values[1]);
-        value[2] = sys_cpu_to_le16(sensor->sensor_values[2]);
+		values[0] = sys_cpu_to_le16(sensor->sensor_values[0]);
+        values[1] = sys_cpu_to_le16(sensor->sensor_values[1]);
+        values[2] = sys_cpu_to_le16(sensor->sensor_values[2]);
 
-		bt_gatt_notify(conn, chrc, &value, sizeof(value));
+        // printk("Size of data: %d\n", sizeof(values));
+        printk("");
+
+		bt_gatt_notify(conn, chrc, &values, sizeof(values));
 	}
 
         // printk("Value: %06d\n", value);
@@ -314,13 +325,12 @@ BT_GATT_SERVICE_DEFINE(gss_svc,
     /*  Removed */
 );
 
-static void simulate(void)
+static void update_sensor_data(void)
 {
     static uint8_t i;
 
     if (!(i % SENSOR_1_UPDATE_IVAL)) {
-        static int16_t values[3];
-        update_sensor_values(NULL, &gss_svc.attrs[2], values, &sensor_1);
+        update_sensor_values(NULL, &gss_svc.attrs[2], &sensor_1);
     }
 
     if (!(i % 100U)) {
@@ -434,9 +444,9 @@ void main(void)
     while (1) {
         k_sleep(K_MSEC(1));
 
-        /* Flow simulation */
+        /* Update sensor data */
         if (notify_enabled) {
-            simulate();
+            update_sensor_data();
         }
 
         /* Battery level simulation */

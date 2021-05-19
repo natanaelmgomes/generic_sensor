@@ -32,9 +32,9 @@ static const struct adc_channel_cfg m_channel_1_cfg = {
     .reference = ADC_REFERENCE,
     .acquisition_time = ADC_ACQUISITION_TIME,
     .channel_id = ADC_CHANNEL_1_ID,
-    .differential = 1,
+    // .differential = 1,
     .input_positive = NRF_SAADC_INPUT_AIN0,
-    .input_negative = NRF_SAADC_INPUT_AIN1,
+    // .input_negative = NRF_SAADC_INPUT_AIN1,
 };
 
 static const struct adc_channel_cfg m_channel_2_cfg = {
@@ -42,18 +42,18 @@ static const struct adc_channel_cfg m_channel_2_cfg = {
     .reference = ADC_REFERENCE,
     .acquisition_time = ADC_ACQUISITION_TIME,
     .channel_id = ADC_CHANNEL_2_ID,
-    .differential = 1,
-    .input_positive = NRF_SAADC_INPUT_AIN2,
-    .input_negative = NRF_SAADC_INPUT_AIN3,
+    // .differential = 1,
+    .input_positive = NRF_SAADC_INPUT_AIN1,
+    // .input_negative = NRF_SAADC_INPUT_AIN3,
 };
 static const struct adc_channel_cfg m_channel_3_cfg = {
     .gain = ADC_GAIN,
     .reference = ADC_REFERENCE,
     .acquisition_time = ADC_ACQUISITION_TIME,
     .channel_id = ADC_CHANNEL_3_ID,
-    .differential = 1,
-    .input_positive = NRF_SAADC_INPUT_AIN4,
-    .input_negative = NRF_SAADC_INPUT_AIN5,
+    // .differential = 1,
+    .input_positive = NRF_SAADC_INPUT_AIN2,
+    // .input_negative = NRF_SAADC_INPUT_AIN5,
 };
 
 void generic_sensor_adc_sample(int16_t adc_voltage[])
@@ -93,7 +93,7 @@ void generic_sensor_adc_sample(int16_t adc_voltage[])
          2^13 = 8192
          2^14 = 16384
          */
-        adc_voltage[i] = (int)((((float)m_sample_buffer[i] / 8192.0f) * 600.0f * 6.0f) * 1.0f);
+        adc_voltage[i] = (int)((((float)m_sample_buffer[i] / 8192.0f) * 600.0f * 6.0f) * 0.5f);
         // Print the values
         printk("ADC raw value: %d \n", m_sample_buffer[i]);
         printk("Estimated voltage: %d mV\n", adc_voltage[i]);

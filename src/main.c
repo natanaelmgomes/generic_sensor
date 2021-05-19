@@ -52,8 +52,9 @@
 #define EQUAL_TO_REF_VALUE              0x08
 #define NOT_EQUAL_TO_REF_VALUE          0x09
 
-int red_led = 0;
-int blue_led = 1;
+
+int blink_red_led_flag = 1;
+int blink_blue_led_flag = 0;
 
 /* Custom Service Variables
 Randomly generated UUID:  a7ea14cf-7778-43ba-ab86-1d6e136a2e9e
@@ -354,14 +355,15 @@ static void connected(struct bt_conn *conn, uint8_t err)
 		printk("Connection failed (err 0x%02x)\n", err);
 	} else {
 		printk("Connected\n");
-        red_led = 1;
+        blink_red_led_flag = 0;
+        red_led_on();
 	}
 }
 
 static void disconnected(struct bt_conn *conn, uint8_t reason)
 {
 	printk("Disconnected (reason 0x%02x)\n", reason);
-    red_led = 0;
+    blink_red_led_flag = 1;
 }
 
 static struct bt_conn_cb conn_callbacks = {
@@ -451,12 +453,14 @@ void main(void)
 
         /* Battery level simulation */
         bas_notify();
-        
+
         if (i == 0){
-            generic_led_blink(red_led, blue_led);
+            if(blink_red_led_flag){
+                red_led_blink();
+            }
         }
         i++;
-        if (i >= 400) {
+        if (i >= 1000) {
             i=0;
         }
     }

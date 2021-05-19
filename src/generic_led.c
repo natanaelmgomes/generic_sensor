@@ -45,13 +45,31 @@ int generic_led_init(void){
         printk("GPIO config error.");
         return -1;
     }
+    gpio_pin_set(led1_dev, PIN0, (int)(0));
+    gpio_pin_set(led1_dev, PIN1, (int)(0));
     return 0;
 }
 
-void generic_led_blink(int red, int blue){
-    gpio_pin_set(led0_dev, PIN0, (int)(led0_is_on & red));
+void red_led_on(void){
+    gpio_pin_set(led0_dev, PIN0, (int)(1));
+    led0_is_on = 1;
+    // printk("led\n");
+}
+
+void red_led_blink(void){
+    gpio_pin_set(led0_dev, PIN0, (int)(led0_is_on));
     led0_is_on = !led0_is_on;
-    gpio_pin_set(led1_dev, PIN1, (int)(led1_is_on & blue));
+    // printk("led\n");
+}
+
+void blue_led_on(void){
+    gpio_pin_set(led1_dev, PIN1, (int)(1));
+    led1_is_on = 1;
+    // printk("led\n");
+}
+
+void blue_led_blink(void){
+    gpio_pin_set(led1_dev, PIN1, (int)(led0_is_on));
     led1_is_on = !led1_is_on;
     // printk("led\n");
 }

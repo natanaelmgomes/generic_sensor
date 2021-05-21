@@ -56,6 +56,8 @@
 int blink_red_led_flag = 1;
 int blink_blue_led_flag = 0;
 
+static uint64_t time, last_time;
+
 /* Custom Service Variables
 Randomly generated UUID:  a7ea14cf-7778-43ba-ab86-1d6e136a2e9e
 Base UUID Generic Sensor: a7ea14cf-0000-43ba-ab86-1d6e136a2e9e
@@ -114,11 +116,7 @@ struct generic_sensor {
     struct measurement meas;
 };
 
-//struct humidity_sensor {
-//	int16_t humid_value;
-
-//	struct es_measurement meas;
-//};
+int16_t values[3];
 
 static bool notify_enabled;
 static struct generic_sensor sensor_1 = {
@@ -268,19 +266,17 @@ static void update_sensor_values(struct bt_conn *conn,
 			       const struct bt_gatt_attr *chrc,
 			       struct generic_sensor *sensor)
 {
-    printk("update_sensor_values\n");
-
-    int16_t values[3];
+    // printk("update_sensor_values\n");
 
     // printk("Size of data: %d\n", sizeof(values));
 
-    generic_sensor_adc_sample(values);
+    generic_sensor_adc_multi_sample(values);
     
 	bool notify = check_condition(sensor->condition,
 				      sensor->sensor_values, values,
 				      sensor->ref_val);
 
-    printk("Condition: %s", notify?"true\n":"false\n");
+    // printk("Condition: %s", notify?"true\n":"false\n");
 
 	/* Update flow value */
 	sensor->sensor_values[0] = values[0];
@@ -289,12 +285,11 @@ static void update_sensor_values(struct bt_conn *conn,
 
 	/* Trigger notification if conditions are met */
 	if (notify) {
-		values[0] = sys_cpu_to_le16(sensor->sensor_values[0]);
-        values[1] = sys_cpu_to_le16(sensor->sensor_values[1]);
-        values[2] = sys_cpu_to_le16(sensor->sensor_values[2]);
+		// values[0] = sys_cpu_to_le16(sensor->sensor_values[0]);
+        // values[1] = sys_cpu_to_le16(sensor->sensor_values[1]);
+        // values[2] = sys_cpu_to_le16(sensor->sensor_values[2]);
 
         // printk("Size of data: %d\n", sizeof(values));
-        printk("");
 
 		bt_gatt_notify(conn, chrc, &values, sizeof(values));
 	}
@@ -331,7 +326,10 @@ static void update_sensor_data(void)
     static uint8_t i;
 
     if (!(i % SENSOR_1_UPDATE_IVAL)) {
+        // time = k_uptime_get();
         update_sensor_values(NULL, &gss_svc.attrs[2], &sensor_1);
+        // last_time = k_uptime_get();
+        // printk("Time passed: %lli ms\n", last_time - time);
     }
 
     if (!(i % 100U)) {
@@ -448,7 +446,9 @@ void main(void)
 
         /* Update sensor data */
         if (notify_enabled) {
+
             update_sensor_data();
+
         }
 
         /* Battery level simulation */

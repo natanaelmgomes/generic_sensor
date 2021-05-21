@@ -10,6 +10,7 @@
 #define GENERIC_SENSOR_ADC__H
 
 void generic_sensor_adc_sample(int16_t adc_voltage[]);
+void generic_sensor_adc_multi_sample(int16_t adc_voltage[]);
 int generic_sensor_adc_init(void);
 
 #endif

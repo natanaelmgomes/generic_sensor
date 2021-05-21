@@ -25,7 +25,9 @@ const struct device *adc_dev;
 #define ADC_CHANNEL_3_ID 3
 #define BUFFER_SIZE 3
 
-int16_t adc_voltage[BUFFER_SIZE];
+static const float adc_max_scale = (600.0f * 6.0f) / (16383.0f);
+
+// int16_t adc_voltage[BUFFER_SIZE];
 
 static const struct adc_channel_cfg m_channel_1_cfg = {
     .gain = ADC_GAIN,
@@ -60,8 +62,6 @@ void generic_sensor_adc_sample(int16_t adc_voltage[])
 {
     static int err;
     static int16_t m_sample_buffer[BUFFER_SIZE];
-    
-    printk("\n *** Sampling *** \n");
 
     if (!adc_dev) {
         printk("Missing device\n");
@@ -93,21 +93,76 @@ void generic_sensor_adc_sample(int16_t adc_voltage[])
          2^13 = 8192
          2^14 = 16384
          */
-        adc_voltage[i] = (int)((((float)m_sample_buffer[i] / 8192.0f) * 600.0f * 6.0f) * 0.5f);
+        adc_voltage[i] = (int)((float)m_sample_buffer[i] * adc_max_scale);
+        // Print the values adc_max_scale
+        // printf("scale: %2.20f \n", adc_max_scale); //0,21973997436366965757187328328145
+        // printf("dif: %f \n", adc_max_scale - 0.21973997436366965757187328328145f);
+        // printk("ADC raw value: %d \n", m_sample_buffer[i]);
+        // printk("Estimated voltage: %d mV\n", adc_voltage[i]);
+    }
+}
+
+void generic_sensor_adc_multi_sample(int16_t adc_voltage[])
+{
+    static int err;
+    static int16_t m_sample_buffer[BUFFER_SIZE];
+    static int32_t cum[BUFFER_SIZE];
+    static const int16_t oversample_N = 20;
+
+    if (!adc_dev) {
+        printk("Missing device\n");
+        return;
+    }
+    
+    // init the adc_voltage with zeros
+    for (int i = 0; i < BUFFER_SIZE; i++) {
+        adc_voltage[i] = 0;
+        cum[i] = 0;
+    }
+
+    const struct adc_sequence sequence = {
+        .channels = BIT(ADC_CHANNEL_1_ID) | BIT(ADC_CHANNEL_2_ID) | BIT(ADC_CHANNEL_3_ID),
+        .buffer = m_sample_buffer,
+        .buffer_size = sizeof(m_sample_buffer),
+        .resolution = ADC_RESOLUTION,
+    };
+    
+    for (int i = 0; i < oversample_N; i++) {
+        // printk("iteration: %d\n", i);
+    
+        err = adc_read(adc_dev, &sequence);
+        if (err) {
+            printk("Error in adc sampling: %d\n", err);
+        }
+
+        for (int j = 0; j < BUFFER_SIZE; j++) {
+            cum[j] = cum[j] + m_sample_buffer[j];
+            // printk("cumulated value: %d \n", cum[j]);
+            // printk("buffer: %d mV\n", m_sample_buffer[j]);
+        }
+    }
+        
+    // Convert the values
+    for (int i = 0; i < BUFFER_SIZE; i++) {
+        /*
+        2^11 = 2048
+        2^12 = 4096
+        2^13 = 8192
+        2^14 = 16384
+        */
+        adc_voltage[i] = (int)(( (float)cum[i] / (float)oversample_N) * adc_max_scale) - (int)22;
         // Print the values
-        printk("ADC raw value: %d \n", m_sample_buffer[i]);
+        // printk("cumulated value: %d \n", cum[i]);
         printk("Estimated voltage: %d mV\n", adc_voltage[i]);
     }
 
-    printk("\n");
-    return;
 }
 
 int generic_sensor_adc_init(void)
 {
     int err;
 
-    printk("nRF52 SAADC sampling 3 channels differential AIN0~AIN1 AIN2~AIN3 AIN4~AIN5\n");
+    printk("nRF52 SAADC sampling 3 channels AIN0 AIN1 AIN2\n");
 
     adc_dev = device_get_binding("ADC_0");
     if (!adc_dev) {

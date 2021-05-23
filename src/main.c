@@ -53,10 +53,10 @@
 #define NOT_EQUAL_TO_REF_VALUE          0x09
 
 
-int blink_red_led_flag = 1;
-int blink_blue_led_flag = 0;
+int blink_red_led_flag = 0;
+int blink_blue_led_flag = 1;
 
-static uint64_t time, last_time;
+// static uint64_t time, last_time;
 
 /* Custom Service Variables
 Randomly generated UUID:  a7ea14cf-7778-43ba-ab86-1d6e136a2e9e
@@ -65,15 +65,15 @@ https://www.guidgenerator.com/online-guid-generator.aspx
  */
 static struct bt_uuid_128 BT_UUID_GENERIC_SENSOR_SERVICE = BT_UUID_INIT_128(
 	0x9e, 0x2e, 0x6a, 0x13, 0x6e, 0x1d, 0x86, 0xab,
-	0xba, 0x43, 0x10, 0x00, 0xcf, 0x14, 0xea, 0xa7);
+	0xba, 0x43, 0x20, 0x00, 0xcf, 0x14, 0xea, 0xa7);
 
 static struct bt_uuid_128 BT_UUID_GENERIC_SENSOR_CHARACTERISTIC = BT_UUID_INIT_128(
 	0x9e, 0x2e, 0x6a, 0x13, 0x6e, 0x1d, 0x86, 0xab,
-	0xba, 0x43, 0x11, 0x00, 0xcf, 0x14, 0xea, 0xa7);
+	0xba, 0x43, 0x21, 0x00, 0xcf, 0x14, 0xea, 0xa7);
 
 static struct bt_uuid_128 BT_UUID_GS_MEASUREMENT = BT_UUID_INIT_128(
 	0x9e, 0x2e, 0x6a, 0x13, 0x6e, 0x1d, 0x86, 0xab,
-	0xba, 0x43, 0x12, 0x00, 0xcf, 0x14, 0xea, 0xa7);
+	0xba, 0x43, 0x22, 0x00, 0xcf, 0x14, 0xea, 0xa7);
     
 static ssize_t read_u16(struct bt_conn *conn, const struct bt_gatt_attr *attr,
                         void *buf, uint16_t len, uint16_t offset)
@@ -353,15 +353,15 @@ static void connected(struct bt_conn *conn, uint8_t err)
 		printk("Connection failed (err 0x%02x)\n", err);
 	} else {
 		printk("Connected\n");
-        blink_red_led_flag = 0;
-        red_led_on();
+        blink_blue_led_flag = 0;
+        blue_led_on();
 	}
 }
 
 static void disconnected(struct bt_conn *conn, uint8_t reason)
 {
 	printk("Disconnected (reason 0x%02x)\n", reason);
-    blink_red_led_flag = 1;
+    blink_blue_led_flag = 1;
 }
 
 static struct bt_conn_cb conn_callbacks = {
@@ -455,8 +455,8 @@ void main(void)
         bas_notify();
 
         if (i == 0){
-            if(blink_red_led_flag){
-                red_led_blink();
+            if(blink_blue_led_flag){
+                blue_led_blink();
             }
         }
         i++;

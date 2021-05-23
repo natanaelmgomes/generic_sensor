@@ -69,7 +69,7 @@ void blue_led_on(void){
 }
 
 void blue_led_blink(void){
-    gpio_pin_set(led1_dev, PIN1, (int)(led0_is_on));
+    gpio_pin_set(led1_dev, PIN1, (int)(led1_is_on));
     led1_is_on = !led1_is_on;
     // printk("led\n");
 }

@@ -125,6 +125,7 @@ void generic_sensor_adc_multi_sample(int16_t adc_voltage[])
         .buffer = m_sample_buffer,
         .buffer_size = sizeof(m_sample_buffer),
         .resolution = ADC_RESOLUTION,
+        .calibrate = 1,
     };
     
     for (int i = 0; i < oversample_N; i++) {

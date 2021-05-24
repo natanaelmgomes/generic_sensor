@@ -150,7 +150,7 @@ void generic_sensor_adc_multi_sample(int16_t adc_voltage[])
         2^13 = 8192
         2^14 = 16384
         */
-        adc_voltage[i] = (int)(( (float)cum[i] / (float)oversample_N) * adc_max_scale) - (int)22;
+        adc_voltage[i] = (int)(( (float)cum[i] / (float)oversample_N) * adc_max_scale);
         // Print the values
         // printk("cumulated value: %d \n", cum[i]);
         printk("Estimated voltage: %d mV\n", adc_voltage[i]);

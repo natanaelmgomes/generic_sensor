@@ -56,7 +56,7 @@
 int blink_red_led_flag = 1;
 int blink_blue_led_flag = 0;
 
-static uint64_t time, last_time;
+// static uint64_t time, last_time;
 
 /* Custom Service Variables
 Randomly generated UUID:  a7ea14cf-7778-43ba-ab86-1d6e136a2e9e

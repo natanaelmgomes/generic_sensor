@@ -56,11 +56,15 @@
 int blink_red_led_flag = 1;
 int blink_blue_led_flag = 0;
 
-static uint64_t time, last_time;
+// static uint64_t time, last_time;
+
+int16_t values[3];
 
 /* Custom Service Variables
-Randomly generated UUID:  a7ea14cf-7778-43ba-ab86-1d6e136a2e9e
-Base UUID Generic Sensor: a7ea14cf-0000-43ba-ab86-1d6e136a2e9e
+Randomly generated UUID:     a7ea14cf-7778-43ba-ab86-1d6e136a2e9e
+Base UUID Generic Sensor:    a7ea14cf-0000-43ba-ab86-1d6e136a2e9e
+Base UUID Right Foot Sensor: a7ea14cf-0010-43ba-ab86-1d6e136a2e9e
+Base UUID Left Foot Sensor:  a7ea14cf-0020-43ba-ab86-1d6e136a2e9e
 https://www.guidgenerator.com/online-guid-generator.aspx
 */
 static struct bt_uuid_128 BT_UUID_GENERIC_SENSOR_SERVICE = BT_UUID_INIT_128(
@@ -80,13 +84,15 @@ static ssize_t read_u16(struct bt_conn *conn, const struct bt_gatt_attr *attr,
 {
     printk("read_u16\n");
 
-    const uint16_t *u16 = attr->user_data;
-    uint16_t value = sys_cpu_to_le16(*u16);
+    generic_sensor_adc_multi_sample(values);
 
-    printk("Size of data: %d\n", sizeof(value));
+    // const uint16_t *u16 = attr->user_data;
+    // uint16_t value = sys_cpu_to_le16(*u16);
 
-    return bt_gatt_attr_read(conn, attr, buf, len, offset, &value,
-                            sizeof(value));
+    printk("Size of data: %d\n", sizeof(values));
+
+    return bt_gatt_attr_read(conn, attr, buf, len, offset, &values,
+                            sizeof(values));
 }
 
 // Sensing Service Declaration
@@ -116,7 +122,7 @@ struct generic_sensor {
     struct measurement meas;
 };
 
-int16_t values[3];
+
 
 static bool notify_enabled;
 static struct generic_sensor sensor_1 = {
@@ -262,6 +268,8 @@ static bool check_condition(uint8_t condition, int16_t *old_val, int16_t *new_va
     }
 }
 
+// int16_t aaa[3] = {0, 0, 0};
+
 static void update_sensor_values(struct bt_conn *conn,
                 const struct bt_gatt_attr *chrc,
                 struct generic_sensor *sensor)
@@ -271,6 +279,14 @@ static void update_sensor_values(struct bt_conn *conn,
     // printk("Size of data: %d\n", sizeof(values));
 
     generic_sensor_adc_multi_sample(values);
+
+    // values[0] = aaa[0];
+    // values[1] = aaa[1];
+    // values[2] = aaa[2];
+
+    // aaa[0] = aaa[0] + 1;
+    // aaa[1] = aaa[1] + 1;
+    // aaa[2] = aaa[2] + 1;
     
     bool notify = check_condition(sensor->condition,
                     sensor->sensor_values, values,

@@ -82,13 +82,13 @@ static struct bt_uuid_128 BT_UUID_GS_MEASUREMENT = BT_UUID_INIT_128(
 static ssize_t read_u16(struct bt_conn *conn, const struct bt_gatt_attr *attr,
                         void *buf, uint16_t len, uint16_t offset)
 {
-    printk("read_u16\n");
+    // printk("read_u16\n");
 
     // const uint16_t *u16 = attr->user_data;
     // uint16_t value = sys_cpu_to_le16(*u16);
     generic_sensor_adc_multi_sample(values);
 
-    printk("Size of data: %d\n", sizeof(values));
+    // printk("Size of data: %d\n", sizeof(values));
 
     return bt_gatt_attr_read(conn, attr, buf, len, offset, &values,
                             sizeof(values));
@@ -138,8 +138,8 @@ static struct generic_sensor sensor_1 = {
 static void gs_ccc_cfg_changed(const struct bt_gatt_attr *attr,
                 uint16_t value)
 {
-    printk("gs_ccc_cfg_changed\n");
-    printk("Value received: %d\n", value);
+    // printk("gs_ccc_cfg_changed\n");
+    // printk("Value received: %d\n", value);
     notify_enabled = value == BT_GATT_CCC_NOTIFY;
 }
 
@@ -156,7 +156,7 @@ static ssize_t read_gs_measurement(struct bt_conn *conn,
                 const struct bt_gatt_attr *attr, void *buf,
                 uint16_t len, uint16_t offset)
 {
-    printk("read_gs_measurement\n");
+    // printk("read_gs_measurement\n");
     const struct measurement *value = attr->user_data;
     struct read_es_measurement_rp rsp;
 
@@ -175,7 +175,7 @@ static ssize_t read_value_valid_range(struct bt_conn *conn,
                     const struct bt_gatt_attr *attr, void *buf,
                     uint16_t len, uint16_t offset)
 {
-    printk("read_value_valid_range\n");
+    // printk("read_value_valid_range\n");
     const struct generic_sensor *sensor = attr->user_data;
     uint16_t tmp[] = {sys_cpu_to_le16(sensor->lower_limit),
             sys_cpu_to_le16(sensor->upper_limit)};
@@ -199,7 +199,7 @@ static ssize_t read_value_trigger_setting(struct bt_conn *conn,
                     void *buf, uint16_t len,
                     uint16_t offset)
 {
-    printk("read_value_trigger_setting\n");
+    // printk("read_value_trigger_setting\n");
     const struct generic_sensor *sensor = attr->user_data;
 
     switch (sensor->condition) {
@@ -238,7 +238,7 @@ static ssize_t read_value_trigger_setting(struct bt_conn *conn,
 static bool check_condition(uint8_t condition, int16_t *old_val, int16_t *new_val,
                 int16_t ref_val)
 {
-    printk("check_condition\n");
+    // printk("check_condition\n");
     switch (condition) {
     case TRIGGER_INACTIVE:
         return false;
@@ -330,10 +330,10 @@ static void update_sensor_data(void)
     static uint8_t i;
 
     if (!(i % SENSOR_1_UPDATE_IVAL)) {
-        time = k_uptime_get();
+        // time = k_uptime_get();
         update_sensor_values(NULL, &gss_svc.attrs[2], &sensor_1);
-        last_time = k_uptime_get();
-        printk("Time passed: %lli ms\n", last_time - time);
+        // last_time = k_uptime_get();
+        // printk("Time passed: %lli ms\n", last_time - time);
 
     }
 

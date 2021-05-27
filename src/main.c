@@ -52,7 +52,7 @@
 #define EQUAL_TO_REF_VALUE              0x08
 #define NOT_EQUAL_TO_REF_VALUE          0x09
 
-
+/* LEDs to blink */
 int blink_red_led_flag = 1;
 int blink_blue_led_flag = 0;
 
@@ -78,6 +78,9 @@ static struct bt_uuid_128 BT_UUID_GENERIC_SENSOR_CHARACTERISTIC = BT_UUID_INIT_1
 static struct bt_uuid_128 BT_UUID_GS_MEASUREMENT = BT_UUID_INIT_128(
     0x9e, 0x2e, 0x6a, 0x13, 0x6e, 0x1d, 0x86, 0xab,
     0xba, 0x43, 0x12, 0x00, 0xcf, 0x14, 0xea, 0xa7);
+
+/* Kernel Timer */
+struct k_timer ble_timer;
     
 static ssize_t read_u16(struct bt_conn *conn, const struct bt_gatt_attr *attr,
                         void *buf, uint16_t len, uint16_t offset)
@@ -140,9 +143,22 @@ static struct generic_sensor sensor_1 = {
 static void gs_ccc_cfg_changed(const struct bt_gatt_attr *attr,
                 uint16_t value)
 {
-    // printk("gs_ccc_cfg_changed\n");
-    // printk("Value received: %d\n", value);
+    printk("gs_ccc_cfg_changed\n");
+    printk("Value received: %d\n", value);
     notify_enabled = value == BT_GATT_CCC_NOTIFY;
+
+
+    if (notify_enabled)
+    {
+        k_timer_start(&ble_timer, K_MSEC(SENSOR_1_UPDATE_IVAL), K_MSEC(SENSOR_1_UPDATE_IVAL));
+        printk("start timer\n");
+    }
+    else
+    {
+        k_timer_stop(&ble_timer);
+
+        printk("stop timer\n");
+    }
 }
 
 struct read_es_measurement_rp {
@@ -355,6 +371,16 @@ static void update_sensor_data(void)
     i++;
 }
 
+extern void timer_function(struct k_timer *timer_id)
+{
+    update_sensor_values(NULL, &gss_svc.attrs[2], &sensor_1);
+    
+
+    static int i;
+    printk("timer callback function %d\n",i++);
+
+}
+
 static const struct bt_data ad[] = {
     BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),
     BT_DATA_BYTES(BT_DATA_GAP_APPEARANCE, 0x00, 0x03),
@@ -456,16 +482,18 @@ void main(void)
     bt_conn_cb_register(&conn_callbacks);
     bt_conn_auth_cb_register(&auth_cb_display);
 
+    k_timer_init(&ble_timer, timer_function, NULL);
+
     static int i = 0;
     while (1) {
         k_sleep(K_MSEC(1));
 
         /* Update sensor data */
-        if (notify_enabled) {
+        // if (notify_enabled) {
 
-            update_sensor_data();
+        //     update_sensor_data();
 
-        }
+        // }
 
         /* Battery level simulation */
         bas_notify();

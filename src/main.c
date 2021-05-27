@@ -376,8 +376,8 @@ extern void timer_function(struct k_timer *timer_id)
     update_sensor_values(NULL, &gss_svc.attrs[2], &sensor_1);
     
 
-    static int i;
-    printk("timer callback function %d\n",i++);
+    // static int i;
+    // printk("timer callback function %d\n",i++);
 
 }
 

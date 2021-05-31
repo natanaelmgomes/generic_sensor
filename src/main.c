@@ -56,7 +56,7 @@
 int blink_red_led_flag = 0;
 int blink_blue_led_flag = 1;
 
-static uint64_t time, last_time;
+// static uint64_t time, last_time;
 
 int16_t values[3];
 

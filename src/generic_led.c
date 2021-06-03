@@ -45,7 +45,7 @@ int generic_led_init(void){
         printk("GPIO config error.");
         return -1;
     }
-    gpio_pin_set(led1_dev, PIN0, (int)(0));
+    gpio_pin_set(led0_dev, PIN0, (int)(0));
     gpio_pin_set(led1_dev, PIN1, (int)(0));
     return 0;
 }

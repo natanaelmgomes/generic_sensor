@@ -29,10 +29,11 @@
 #include <bluetooth/gatt.h>
 #include <bluetooth/services/bas.h>
 
+/* Display sensor name */
 #define SENSOR_1_NAME				"Sensor 1"
 
 /* Sensor Internal Update Interval [miliseconds] */
-#define SENSOR_1_UPDATE_IVAL            100
+#define SENSOR_1_UPDATE_IVAL            100U
 // #define SENSOR_2_UPDATE_IVAL         100
 // #define SENSOR_3_UPDATE_IVAL         60
 
@@ -56,7 +57,7 @@
 int blink_red_led_flag = 1;
 int blink_blue_led_flag = 0;
 
-// static uint64_t time, last_time;
+static uint32_t time, last_time;
 
 int16_t values[3];
 
@@ -79,8 +80,9 @@ static struct bt_uuid_128 BT_UUID_GS_MEASUREMENT = BT_UUID_INIT_128(
     0x9e, 0x2e, 0x6a, 0x13, 0x6e, 0x1d, 0x86, 0xab,
     0xba, 0x43, 0x12, 0x00, 0xcf, 0x14, 0xea, 0xa7);
 
-/* Kernel Timer */
-struct k_timer ble_timer;
+/* Kernel Timers */
+// struct k_timer ble_timer;
+// struct k_timer led_timer;
     
 static ssize_t read_u16(struct bt_conn *conn, const struct bt_gatt_attr *attr,
                         void *buf, uint16_t len, uint16_t offset)
@@ -148,17 +150,16 @@ static void gs_ccc_cfg_changed(const struct bt_gatt_attr *attr,
     notify_enabled = value == BT_GATT_CCC_NOTIFY;
 
 
-    if (notify_enabled)
-    {
-        k_timer_start(&ble_timer, K_MSEC(SENSOR_1_UPDATE_IVAL), K_MSEC(SENSOR_1_UPDATE_IVAL));
-        printk("start timer\n");
-    }
-    else
-    {
-        k_timer_stop(&ble_timer);
-
-        printk("stop timer\n");
-    }
+    // if (notify_enabled)
+    // {
+    //     printk("start timer\n");
+    //     k_timer_start(&ble_timer, K_MSEC(100), K_MSEC(SENSOR_1_UPDATE_IVAL));
+    // }
+    // else
+    // {
+    //     printk("stop timer\n");
+    //     k_timer_stop(&ble_timer);
+    // }
 }
 
 struct read_es_measurement_rp {
@@ -349,37 +350,55 @@ BT_GATT_SERVICE_DEFINE(gss_svc,
     BT_GATT_CCC(gs_ccc_cfg_changed,
             BT_GATT_PERM_READ | BT_GATT_PERM_WRITE),
 
-    /*  Sensor 2 */
-    /*  Removed */
 );
 
 static void update_sensor_data(void)
 {
-    static uint8_t i;
 
-    if (!(i % SENSOR_1_UPDATE_IVAL)) {
-        // time = k_uptime_get();
+    time = k_uptime_get_32();
+    // printk("Time passed: %lli ms\n", last_time - time);
+    // printk("Time passed: %d ms\n", time - last_time);
+
+    if ((time - last_time) >= (SENSOR_1_UPDATE_IVAL))
+    {
+        // printk("Time passed: %d ms\n", time - last_time);
+        last_time = k_uptime_get_32();
         update_sensor_values(NULL, &gss_svc.attrs[2], &sensor_1);
-        // last_time = k_uptime_get();
+        
+        // 
         // printk("Time passed: %lli ms\n", last_time - time);
     }
-
-    if (!(i % 100U)) {
-        i = 0U; // unsigned int
-    }
-
-    i++;
-}
-
-extern void timer_function(struct k_timer *timer_id)
-{
-    update_sensor_values(NULL, &gss_svc.attrs[2], &sensor_1);
     
 
-    // static int i;
-    // printk("timer callback function %d\n",i++);
-
 }
+
+// extern void timer_function(struct k_timer *timer_id)
+// {
+//     static int i;
+//     printk("timer callback function %d\n",i++);
+
+//     last_time = k_uptime_get();
+//     update_sensor_values(NULL, &gss_svc.attrs[2], &sensor_1);
+//     blue_led_blink();
+
+//     time = k_uptime_get();
+//     printk("Time passed: %lli ms\n", time - last_time);
+    
+// }
+
+// extern void timer_stop_function(struct k_timer *timer_id)
+// {
+//     static int i;
+//     printk("timer  stop callback function %d\n",i++);
+
+//     // last_time = k_uptime_get();
+//     // update_sensor_values(NULL, &gss_svc.attrs[2], &sensor_1);
+//     // blue_led_blink();
+
+//     // time = k_uptime_get();
+//     // printk("Time passed: %lli ms\n", time - last_time);
+    
+// }
 
 static const struct bt_data ad[] = {
     BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),
@@ -395,6 +414,7 @@ static void connected(struct bt_conn *conn, uint8_t err)
         printk("Connection failed (err 0x%02x)\n", err);
     } else {
         printk("Connected\n");
+        // k_timer_stop(&led_timer);
         blink_red_led_flag = 0;
         red_led_on();
     }
@@ -403,6 +423,7 @@ static void connected(struct bt_conn *conn, uint8_t err)
 static void disconnected(struct bt_conn *conn, uint8_t reason)
 {
     printk("Disconnected (reason 0x%02x)\n", reason);
+    // k_timer_start(&led_timer, K_MSEC(500), K_MSEC(500));
     blink_red_led_flag = 1;
 }
 
@@ -482,18 +503,26 @@ void main(void)
     bt_conn_cb_register(&conn_callbacks);
     bt_conn_auth_cb_register(&auth_cb_display);
 
-    k_timer_init(&ble_timer, timer_function, NULL);
+    // k_timer_init(&ble_timer, timer_function, timer_stop_function);
+    // k_timer_init(&led_timer, red_led_blink, red_led_on);
+
+
+    // bas_notify();
+    // k_timer_start(&led_timer, K_MSEC(500), K_MSEC(500));
+
+    last_time = k_uptime_get();
+    time = k_uptime_get();
 
     static int i = 0;
     while (1) {
         k_sleep(K_MSEC(1));
 
         /* Update sensor data */
-        // if (notify_enabled) {
+        if (notify_enabled) {
 
-        //     update_sensor_data();
+            update_sensor_data();
 
-        // }
+        }
 
         /* Battery level simulation */
         bas_notify();
